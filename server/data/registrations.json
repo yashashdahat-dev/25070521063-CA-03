@@ -1,1 +1,30 @@
-[]
+[
+  {
+    "id": "TICKET-999111",
+    "teamName": "BotStormers",
+    "teamSize": "3",
+    "email": "samir@sit.edu",
+    "eventId": "evt-3",
+    "eventTitle": "RoboWars 2026: Autonomous Combat",
+    "leaderName": "Samir Joshi",
+    "venue": "Mechanical Workshop Arena",
+    "eventDate": "Dec 05, 2026",
+    "rollNumber": "25070521999",
+    "registeredAt": "2026-10-24T08:40:27.173Z",
+    "status": "Confirmed"
+  },
+  {
+    "id": "TICKET-343612",
+    "eventId": "evt-1",
+    "eventTitle": "HackSIT 2026: 36-Hour National Hackathon",
+    "eventDate": "Nov 14 - 16, 2026",
+    "venue": "Campus Tech Audi & Computing Labs",
+    "teamName": "bjubds",
+    "leaderName": "ef mk w",
+    "rollNumber": "3453232534",
+    "email": "jhhvas@jbjkbdw.com",
+    "teamSize": "2",
+    "registeredAt": "Oct 24, 2026",
+    "status": "Confirmed"
+  }
+]

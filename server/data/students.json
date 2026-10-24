@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "_id": "sid_1792830645653",
+    "name": "ef mk w",
+    "age": 20,
+    "status": "Registered: HackSIT 2026: 36-Hour National Hackathon (Team: bjubds)",
+    "email": "jhhvas@jbjkbdw.com",
+    "password": "$2b$10$wzTRcN0qzRRpUGob.ISMd.FCx90DmeIZXVkDQP96U9ImqVahKepN2",
+    "createdAt": "2026-10-24T08:30:45.653Z"
+  }
+]
