@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import Header from './homeComp/header';
 import MainContent from './homeComp/mainContentCont';
 import Footer from './homeComp/footer';
@@ -169,20 +169,25 @@ const Home = () => {
     existing.unshift(newRegistration);
     localStorage.setItem('sit_user_registrations', JSON.stringify(existing));
 
-    // Try sending to backend server if up
+    // 1. Send full registration to /api/events/register (persists to registrations.json & MongoDB)
+    fetch('http://localhost:5000/api/events/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newRegistration)
+    }).catch(err => console.log('Event register fetch err:', err));
+
+    // 2. Also send student info to /create (persists to students.json & MongoDB student collection)
     fetch('http://localhost:5000/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: formData.leaderName,
         age: 20,
-        status: 'Registered: ' + activeModalEvent.title,
+        status: 'Registered: ' + activeModalEvent.title + ' (Team: ' + formData.teamName + ')',
         password: 'password123',
         email: formData.email || `${formData.rollNumber}@sit.edu`
       })
-    }).catch(() => {
-      // Offline fallback already stored in localStorage
-    });
+    }).catch(err => console.log('Create student fetch err:', err));
 
     setRegisteredSuccess(newRegistration);
   };

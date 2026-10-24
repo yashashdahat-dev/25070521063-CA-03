@@ -4,19 +4,45 @@ const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const jwtToken = require("jsonwebtoken");
 const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const uri = "mongodb://localhost:27017";
-const client = new MongoClient(uri, { serverSelectionTimeoutMS: 2500 });
-const port = 5000;
-let isMongoConnected = false;
-let myDb = null;
+const DATA_DIR = path.join(__dirname, "data");
+const STUDENTS_FILE = path.join(DATA_DIR, "students.json");
+const REGISTRATIONS_FILE = path.join(DATA_DIR, "registrations.json");
 
-// In-memory fallback dataset in case local MongoDB service is offline
-let inMemoryStudents = [
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// Helpers to read/write JSON files safely
+function loadJson(filePath, defaultData) {
+  try {
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, "utf-8");
+      return JSON.parse(content);
+    }
+  } catch (err) {
+    console.error("Error reading " + filePath, err);
+  }
+  saveJson(filePath, defaultData);
+  return defaultData;
+}
+
+function saveJson(filePath, data) {
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Error writing " + filePath, err);
+  }
+}
+
+// Default initial datasets
+const initialStudents = [
   {
     _id: "67192a01b1a23c4d5e6f7a81",
     name: "Yashash Dahat",
@@ -26,7 +52,7 @@ let inMemoryStudents = [
   }
 ];
 
-let inMemoryRegistrations = [
+const initialRegistrations = [
   {
     id: "TICKET-250705",
     eventId: "evt-1",
@@ -38,25 +64,44 @@ let inMemoryRegistrations = [
     rollNumber: "25070521063",
     email: "25070521063@sit.edu",
     teamSize: "4",
+    registeredAt: "Oct 24, 2026",
     status: "Confirmed"
   }
 ];
 
-// Initialize and Start Server
+let inMemoryStudents = loadJson(STUDENTS_FILE, initialStudents);
+let inMemoryRegistrations = loadJson(REGISTRATIONS_FILE, initialRegistrations);
+
+const uri = "mongodb://localhost:27017";
+const client = new MongoClient(uri, { serverSelectionTimeoutMS: 2000 });
+const port = 5000;
+let isMongoConnected = false;
+let myDb = null;
+
 async function startServer() {
   try {
     await client.connect();
     isMongoConnected = true;
     myDb = client.db("sitSecB");
-    console.log(">>> [MongoDB] Successfully connected to mongodb://localhost:27017 (db: sitSecB)");
+    console.log(">>> [MongoDB] Connected successfully to mongodb://localhost:27017/sitSecB");
+
+    // Sync file data into mongo if collection is empty
+    const sCount = await myDb.collection("student").countDocuments();
+    if (sCount === 0) {
+      await myDb.collection("student").insertMany(inMemoryStudents);
+    }
+    const rCount = await myDb.collection("event_registrations").countDocuments();
+    if (rCount === 0) {
+      await myDb.collection("event_registrations").insertMany(inMemoryRegistrations);
+    }
   } catch (error) {
     isMongoConnected = false;
-    console.warn(">>> [MongoDB] Note: Local MongoDB service is offline (" + error.message + ").");
-    console.log(">>> [Server] Running in resilient mode with auto-fallback in-memory store.");
+    console.log(">>> [Storage Mode] Local file + in-memory store active at:", DATA_DIR);
+    console.log(">>> [Notice] MongoDB is offline, auto-persisting to JSON files in server/data/");
   }
 
   app.listen(port, () => {
-    console.log(`>>> [Express] Server started successfully at http://localhost:${port}`);
+    console.log(`>>> [Express] SIT Nexus Server running on http://localhost:${port}`);
   });
 }
 
@@ -99,30 +144,27 @@ app.post("/create", async (req, res) => {
   const { name, age, status, password, email } = req.body;
   const hashedPass = password ? await bcrypt.hash(password, 10) : "";
 
+  const newStudent = {
+    _id: "sid_" + Date.now(),
+    name,
+    age: Number(age) || 20,
+    status,
+    email,
+    password: hashedPass,
+    createdAt: new Date().toISOString()
+  };
+
   if (isMongoConnected && myDb) {
     try {
-      const response = await myDb.collection("student").insertOne({
-        name,
-        age: Number(age) || 20,
-        status,
-        password: hashedPass,
-        email
-      });
-      return res.json(response);
+      await myDb.collection("student").insertOne(newStudent);
     } catch (err) {
       console.error(err);
     }
   }
 
-  const newStudent = {
-    _id: "mem_" + Date.now(),
-    name,
-    age: Number(age) || 20,
-    status,
-    email,
-    password: hashedPass
-  };
-  inMemoryStudents.push(newStudent);
+  inMemoryStudents.unshift(newStudent);
+  saveJson(STUDENTS_FILE, inMemoryStudents);
+
   return res.json({ acknowledged: true, insertedId: newStudent._id, student: newStudent });
 });
 
@@ -132,8 +174,13 @@ app.post("/login", async (req, res) => {
   let student = null;
 
   if (isMongoConnected && myDb) {
-    student = await myDb.collection("student").findOne({ email: email });
-  } else {
+    try {
+      student = await myDb.collection("student").findOne({ email: email });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  if (!student) {
     student = inMemoryStudents.find(s => s.email === email);
   }
 
@@ -160,11 +207,10 @@ app.put("/update/:id", async (req, res) => {
 
   if (isMongoConnected && myDb) {
     try {
-      const response = await myDb.collection("student").updateOne(
+      await myDb.collection("student").updateOne(
         { _id: new ObjectId(id) },
         { $set: { status: status } }
       );
-      return res.json(response);
     } catch (err) {
       console.error(err);
     }
@@ -173,6 +219,7 @@ app.put("/update/:id", async (req, res) => {
   const student = inMemoryStudents.find(s => String(s._id) === id);
   if (student) {
     student.status = status;
+    saveJson(STUDENTS_FILE, inMemoryStudents);
     return res.json({ acknowledged: true, modifiedCount: 1 });
   }
   return res.status(404).json({ msg: "Student Id Invalid" });
@@ -184,8 +231,7 @@ app.delete("/delete/:id", async (req, res) => {
 
   if (isMongoConnected && myDb) {
     try {
-      const response = await myDb.collection("student").deleteOne({ _id: new ObjectId(id) });
-      return res.json(response);
+      await myDb.collection("student").deleteOne({ _id: new ObjectId(id) });
     } catch (err) {
       console.error(err);
     }
@@ -193,6 +239,7 @@ app.delete("/delete/:id", async (req, res) => {
 
   const prevLen = inMemoryStudents.length;
   inMemoryStudents = inMemoryStudents.filter(s => String(s._id) !== id);
+  saveJson(STUDENTS_FILE, inMemoryStudents);
   return res.json({ acknowledged: true, deletedCount: prevLen - inMemoryStudents.length });
 });
 
@@ -203,9 +250,9 @@ app.delete("/delete/:id", async (req, res) => {
 // POST register team for event
 app.post("/api/events/register", async (req, res) => {
   const regData = {
-    id: "TICKET-" + Math.floor(100000 + Math.random() * 900000),
+    id: req.body.id || ("TICKET-" + Math.floor(100000 + Math.random() * 900000)),
     ...req.body,
-    registeredAt: new Date().toISOString(),
+    registeredAt: req.body.registeredAt || new Date().toISOString(),
     status: "Confirmed"
   };
 
@@ -217,8 +264,12 @@ app.post("/api/events/register", async (req, res) => {
     }
   }
 
+  // Remove existing with same ID if any, and add to start
+  inMemoryRegistrations = inMemoryRegistrations.filter(r => r.id !== regData.id);
   inMemoryRegistrations.unshift(regData);
-  return res.json({ success: true, pass: regData });
+  saveJson(REGISTRATIONS_FILE, inMemoryRegistrations);
+
+  return res.json({ success: true, pass: regData, storedAt: REGISTRATIONS_FILE });
 });
 
 // GET registrations by roll number
@@ -235,4 +286,52 @@ app.get("/api/events/registrations/:rollNumber", async (req, res) => {
 
   const list = inMemoryRegistrations.filter(r => r.rollNumber === roll);
   return res.json(list);
+});
+
+// GET all registrations
+app.get("/api/events/registrations", async (req, res) => {
+  if (isMongoConnected && myDb) {
+    try {
+      const data = await myDb.collection("event_registrations").find().toArray();
+      return res.json(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  return res.json(inMemoryRegistrations);
+});
+
+// GET server status & diagnostic data info
+app.get("/api/status", async (req, res) => {
+  let studentCount = inMemoryStudents.length;
+  let registrationCount = inMemoryRegistrations.length;
+  let storageMode = "Local JSON Persistent File (" + REGISTRATIONS_FILE + ")";
+
+  if (isMongoConnected && myDb) {
+    try {
+      studentCount = await myDb.collection("student").countDocuments();
+      registrationCount = await myDb.collection("event_registrations").countDocuments();
+      storageMode = "MongoDB (mongodb://localhost:27017/sitSecB) + JSON Backup";
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  return res.json({
+    server: "SIT NEXUS CA-03 Backend",
+    port: port,
+    status: "ONLINE",
+    mongoConnected: isMongoConnected,
+    storageMode: storageMode,
+    files: {
+      registrationsFile: REGISTRATIONS_FILE,
+      studentsFile: STUDENTS_FILE
+    },
+    counts: {
+      students: studentCount,
+      registrations: registrationCount
+    },
+    students: inMemoryStudents,
+    registrations: inMemoryRegistrations
+  });
 });
