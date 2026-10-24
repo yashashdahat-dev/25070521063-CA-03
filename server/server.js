@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const { MongoClient, ObjectId } = require("mongodb");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
@@ -41,33 +41,9 @@ function saveJson(filePath, data) {
   }
 }
 
-// Default initial datasets
-const initialStudents = [
-  {
-    _id: "67192a01b1a23c4d5e6f7a81",
-    name: "Yashash Dahat",
-    age: 20,
-    status: "Lead Developer (Team Algorists)",
-    email: "25070521063@sit.edu"
-  }
-];
-
-const initialRegistrations = [
-  {
-    id: "TICKET-250705",
-    eventId: "evt-1",
-    eventTitle: "HackSIT 2026: 36-Hour National Hackathon",
-    eventDate: "Nov 14 - 16, 2026",
-    venue: "Campus Tech Audi & Computing Labs",
-    teamName: "Team Algorists",
-    leaderName: "Yashash Dahat",
-    rollNumber: "25070521063",
-    email: "25070521063@sit.edu",
-    teamSize: "4",
-    registeredAt: "Oct 24, 2026",
-    status: "Confirmed"
-  }
-];
+// Default initial datasets (starts clean, populated only on user registration)
+const initialStudents = [];
+const initialRegistrations = [];
 
 let inMemoryStudents = loadJson(STUDENTS_FILE, initialStudents);
 let inMemoryRegistrations = loadJson(REGISTRATIONS_FILE, initialRegistrations);

@@ -5,7 +5,7 @@ import './App.css';
 
 const Services = () => {
   const [activeTab, setActiveTab] = useState('passes'); // 'passes', 'events', 'host', 'storage'
-  const [userRoll, setUserRoll] = useState('25070521063');
+  const [userRoll, setUserRoll] = useState('');
   const [registrations, setRegistrations] = useState([]);
   const [eventsList, setEventsList] = useState(initialEvents);
 
@@ -46,40 +46,17 @@ const Services = () => {
   };
 
   useEffect(() => {
+    // 1. Read existing local storage (starts empty if no one has registered yet)
     const saved = JSON.parse(localStorage.getItem('sit_user_registrations') || '[]');
-    // Seed default registration for student if empty
-    if (saved.length === 0) {
-      const defaultPass = {
-        id: 'TICKET-250705',
-        eventId: 'evt-1',
-        eventTitle: 'HackSIT 2026: 36-Hour National Hackathon',
-        eventDate: 'Nov 14 - 16, 2026',
-        venue: 'Campus Tech Audi & Computing Labs',
-        teamName: 'Team Algorists',
-        leaderName: 'Yashash Dahat',
-        rollNumber: '25070521063',
-        email: '25070521063@sit.edu',
-        teamSize: '4',
-        registeredAt: 'Oct 24, 2026',
-        status: 'Confirmed'
-      };
-      saved.push(defaultPass);
-      localStorage.setItem('sit_user_registrations', JSON.stringify(saved));
-    }
     setRegistrations(saved);
 
-    // Fetch from backend server
-    fetch('http://localhost:5000/api/events/registrations/25070521063')
+    // 2. Fetch all real registrations from backend server
+    fetch('http://localhost:5000/api/events/registrations')
       .then(res => res.json())
       .then(serverData => {
-        if (serverData && serverData.length > 0) {
-          const localIds = new Set(saved.map(r => r.id));
-          const newFromServer = serverData.filter(r => !localIds.has(r.id));
-          if (newFromServer.length > 0) {
-            const merged = [...saved, ...newFromServer];
-            setRegistrations(merged);
-            localStorage.setItem('sit_user_registrations', JSON.stringify(merged));
-          }
+        if (Array.isArray(serverData)) {
+          setRegistrations(serverData);
+          localStorage.setItem('sit_user_registrations', JSON.stringify(serverData));
         }
       })
       .catch(() => {
@@ -93,16 +70,33 @@ const Services = () => {
   const handleFilterByRoll = () => {
     const saved = JSON.parse(localStorage.getItem('sit_user_registrations') || '[]');
     if (!userRoll.trim()) {
-      setRegistrations(saved);
+      fetch('http://localhost:5000/api/events/registrations')
+        .then(res => res.json())
+        .then(serverData => {
+          if (Array.isArray(serverData)) {
+            setRegistrations(serverData);
+          } else {
+            setRegistrations(saved);
+          }
+        })
+        .catch(() => setRegistrations(saved));
       return;
     }
-    const localFiltered = saved.filter(r => r.rollNumber.toLowerCase().includes(userRoll.toLowerCase()));
+
+    const query = userRoll.trim().toLowerCase();
+    // Filter locally first across roll, leader, or team name
+    const localFiltered = saved.filter(r => 
+      (r.rollNumber && r.rollNumber.toLowerCase().includes(query)) ||
+      (r.leaderName && r.leaderName.toLowerCase().includes(query)) ||
+      (r.teamName && r.teamName.toLowerCase().includes(query))
+    );
     setRegistrations(localFiltered);
 
+    // Also query backend endpoint
     fetch(`http://localhost:5000/api/events/registrations/${userRoll.trim()}`)
       .then(res => res.json())
       .then(serverData => {
-        if (serverData && serverData.length > 0) {
+        if (Array.isArray(serverData) && serverData.length > 0) {
           const localIds = new Set(localFiltered.map(r => r.id));
           const newFromServer = serverData.filter(r => !localIds.has(r.id));
           if (newFromServer.length > 0) {
@@ -168,7 +162,7 @@ const Services = () => {
             className={`tab-btn ${activeTab === 'passes' ? 'active' : ''}`}
             onClick={() => setActiveTab('passes')}
           >
-            <i className="fa-solid fa-id-card"></i> My Registered Passes ({registrations.length})
+            <i className="fa-solid fa-id-card"></i> Registered Passes ({registrations.length})
           </button>
           <button
             className={`tab-btn ${activeTab === 'events' ? 'active' : ''}`}
@@ -200,8 +194,8 @@ const Services = () => {
               display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem'
             }}>
               <div>
-                <h4 style={{ margin: 0, fontSize: '1.15rem' }}>Lookup Passes by Roll Number</h4>
-                <small style={{ color: '#94a3b8' }}>Filter your registered hackathon passes</small>
+                <h4 style={{ margin: 0, fontSize: '1.15rem' }}>Lookup Passes by Roll Number or Team</h4>
+                <small style={{ color: '#94a3b8' }}>Search any registered participant or team pass</small>
               </div>
 
               <div className="d-flex gap-2" style={{ maxWidth: '420px', width: '100%' }}>
@@ -209,7 +203,7 @@ const Services = () => {
                   type="text"
                   className="form-control-custom"
                   style={{ margin: 0 }}
-                  placeholder="Enter Roll No (e.g. 25070521063)"
+                  placeholder="Enter Roll No or Team Name..."
                   value={userRoll}
                   onChange={e => setUserRoll(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleFilterByRoll()}
@@ -217,21 +211,41 @@ const Services = () => {
                 <button className="btn-nexus-primary" onClick={handleFilterByRoll}>
                   <i className="fa-solid fa-magnifying-glass"></i> Search
                 </button>
+                {userRoll && (
+                  <button 
+                    className="btn-nexus-outline" 
+                    onClick={() => { setUserRoll(''); handleFilterByRoll(); }}
+                    title="Clear filter"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Passes Grid */}
             {registrations.length === 0 ? (
               <div style={{
-                textAlign: 'center', padding: '4rem 1rem', background: 'var(--bg-card)',
+                textAlign: 'center', padding: '4rem 1.5rem', background: 'var(--bg-card)',
                 borderRadius: '16px', border: '1px dashed var(--border-glass)'
               }}>
-                <i className="fa-solid fa-ticket" style={{ fontSize: '3rem', color: '#64748b', marginBottom: '1rem' }}></i>
-                <h3>No Registered Passes Found</h3>
-                <p style={{ color: '#94a3b8' }}>You have not registered for any events with Roll Number: <strong>{userRoll}</strong></p>
-                <button className="btn-nexus-primary mt-2" onClick={() => setActiveTab('events')}>
-                  Browse Live Hackathons
-                </button>
+                <div style={{
+                  width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', color: '#818cf8'
+                }}>
+                  <i className="fa-solid fa-ticket" style={{ fontSize: '1.8rem' }}></i>
+                </div>
+                <h3 style={{ fontSize: '1.35rem', marginBottom: '0.5rem' }}>
+                  {userRoll ? `No Passes Found for "${userRoll}"` : "No Registered Passes Yet"}
+                </h3>
+                <p style={{ color: '#94a3b8', maxWidth: '520px', margin: '0 auto 1.5rem', fontSize: '0.92rem' }}>
+                  {userRoll 
+                    ? "No event passes matched your search term. Check the roll number or clear the search to view all passes."
+                    : "There are currently no registrations stored in the system. When you or another team registers for an event on the Home page, the official pass will appear right here!"}
+                </p>
+                <a href="/#events" className="btn-nexus-primary" style={{ display: 'inline-flex' }}>
+                  <i className="fa-solid fa-bolt me-2"></i> Browse & Register for an Event
+                </a>
               </div>
             ) : (
               <div className="row g-4">
@@ -412,7 +426,7 @@ const Services = () => {
                     <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc' }}>Local JSON File</span>
                   </div>
                   <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#38bdf8' }}>
-                    {serverStatus?.counts?.registrations || registrations.length} Passes
+                    {serverStatus?.counts?.registrations ?? registrations.length} Passes
                   </div>
                   <small style={{ color: '#94a3b8', display: 'block', marginTop: '4px' }}>
                     Auto-saved on disk upon registration
@@ -442,7 +456,7 @@ const Services = () => {
                     <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc' }}>Student Records</span>
                   </div>
                   <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#818cf8' }}>
-                    {serverStatus?.counts?.students || 1} Students
+                    {serverStatus?.counts?.students ?? 0} Students
                   </div>
                   <small style={{ color: '#94a3b8', display: 'block', marginTop: '4px' }}>
                     CA-03 Student Collection
@@ -664,39 +678,46 @@ const Services = () => {
                 Live Stored Registrations (Server Data)
               </h3>
               
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-glass)', color: '#94a3b8', textAlign: 'left' }}>
-                      <th style={{ padding: '10px' }}>Pass ID</th>
-                      <th style={{ padding: '10px' }}>Event</th>
-                      <th style={{ padding: '10px' }}>Team Name</th>
-                      <th style={{ padding: '10px' }}>Leader</th>
-                      <th style={{ padding: '10px' }}>Roll Number</th>
-                      <th style={{ padding: '10px' }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(serverStatus?.registrations || registrations).map((r, idx) => (
-                      <tr key={r.id || idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#f8fafc' }}>
-                        <td style={{ padding: '10px' }}><code style={{ color: '#38bdf8' }}>{r.id}</code></td>
-                        <td style={{ padding: '10px', fontWeight: 600 }}>{r.eventTitle}</td>
-                        <td style={{ padding: '10px' }}>{r.teamName}</td>
-                        <td style={{ padding: '10px' }}>{r.leaderName}</td>
-                        <td style={{ padding: '10px' }}><strong style={{ color: '#818cf8' }}>{r.rollNumber}</strong></td>
-                        <td style={{ padding: '10px' }}>
-                          <span style={{
-                            background: 'rgba(16, 185, 129, 0.15)', color: '#10b981',
-                            padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700
-                          }}>
-                            {r.status || 'Confirmed'}
-                          </span>
-                        </td>
+              {(!serverStatus?.registrations || serverStatus.registrations.length === 0) && registrations.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                  <i className="fa-solid fa-inbox mb-2" style={{ fontSize: '2rem' }}></i>
+                  <p style={{ margin: 0 }}>No records stored yet. Register a team to see real-time data appear here!</p>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-glass)', color: '#94a3b8', textAlign: 'left' }}>
+                        <th style={{ padding: '10px' }}>Pass ID</th>
+                        <th style={{ padding: '10px' }}>Event</th>
+                        <th style={{ padding: '10px' }}>Team Name</th>
+                        <th style={{ padding: '10px' }}>Leader</th>
+                        <th style={{ padding: '10px' }}>Roll Number</th>
+                        <th style={{ padding: '10px' }}>Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {(serverStatus?.registrations || registrations).map((r, idx) => (
+                        <tr key={r.id || idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#f8fafc' }}>
+                          <td style={{ padding: '10px' }}><code style={{ color: '#38bdf8' }}>{r.id}</code></td>
+                          <td style={{ padding: '10px', fontWeight: 600 }}>{r.eventTitle}</td>
+                          <td style={{ padding: '10px' }}>{r.teamName}</td>
+                          <td style={{ padding: '10px' }}>{r.leaderName}</td>
+                          <td style={{ padding: '10px' }}><strong style={{ color: '#818cf8' }}>{r.rollNumber}</strong></td>
+                          <td style={{ padding: '10px' }}>
+                            <span style={{
+                              background: 'rgba(16, 185, 129, 0.15)', color: '#10b981',
+                              padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700
+                            }}>
+                              {r.status || 'Confirmed'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               {/* Raw JSON Accordion */}
               <details style={{ marginTop: '1.5rem' }}>

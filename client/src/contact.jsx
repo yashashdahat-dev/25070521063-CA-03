@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import Footer from './homeComp/footer';
 import './App.css';
 
@@ -6,7 +6,7 @@ const Contact = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [contactData, setContactData] = useState({
     name: '',
-    roll: '25070521063',
+    roll: '',
     email: '',
     category: 'Registration Issue',
     message: ''

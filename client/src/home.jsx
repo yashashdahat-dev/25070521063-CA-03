@@ -120,7 +120,7 @@ const Home = () => {
   const [formData, setFormData] = useState({
     teamName: '',
     leaderName: '',
-    rollNumber: '25070521063',
+    rollNumber: '',
     email: '',
     teamSize: '2',
     projectIdea: ''
@@ -139,6 +139,14 @@ const Home = () => {
 
   const handleOpenRegister = (event) => {
     setActiveModalEvent(event);
+    setFormData({
+      teamName: '',
+      leaderName: '',
+      rollNumber: '',
+      email: '',
+      teamSize: '2',
+      projectIdea: ''
+    });
     setRegisteredSuccess(null);
   };
 
