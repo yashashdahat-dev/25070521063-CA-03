@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { API_BASE } from './apiConfig';
 import './App.css';
 
 const Nav = ({ user: propUser, onLogout }) => {
@@ -12,7 +13,7 @@ const Nav = ({ user: propUser, onLogout }) => {
   const [dbStatus, setDbStatus] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/status')
+    fetch(`${API_BASE}/api/status`)
       .then(res => res.json())
       .then(data => setDbStatus(data))
       .catch(() => setDbStatus(null));

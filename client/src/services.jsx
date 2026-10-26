@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Footer from './homeComp/footer';
 import { initialEvents } from './home';
 import { useAuth } from './AuthContext';
+import { API_BASE } from './apiConfig';
 import './App.css';
 
 const Services = ({ user: propUser, token }) => {
@@ -36,12 +37,12 @@ const Services = ({ user: propUser, token }) => {
   const [newEventSuccess, setNewEventSuccess] = useState(false);
 
   const fetchStatus = () => {
-    fetch('http://localhost:5000/api/status')
+    fetch(`${API_BASE}/api/status`)
       .then(res => res.json())
       .then(data => setDbStatus(data))
       .catch(() => setDbStatus(null));
 
-    fetch('http://localhost:5000/getall')
+    fetch(`${API_BASE}/getall`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setStudentsList(data);
@@ -55,7 +56,7 @@ const Services = ({ user: propUser, token }) => {
     setRegistrations(saved);
 
     // 2. Fetch all real registrations from backend server
-    fetch('http://localhost:5000/api/events/registrations')
+    fetch(`${API_BASE}/api/events/registrations`)
       .then(res => res.json())
       .then(serverData => {
         if (Array.isArray(serverData)) {
@@ -68,7 +69,7 @@ const Services = ({ user: propUser, token }) => {
       });
 
     // 3. Fetch hosted events from MongoDB and merge with static list
-    fetch('http://localhost:5000/api/events')
+    fetch(`${API_BASE}/api/events`)
       .then(res => res.json())
       .then(hostedEvts => {
         if (Array.isArray(hostedEvts) && hostedEvts.length > 0) {
@@ -86,7 +87,7 @@ const Services = ({ user: propUser, token }) => {
   const handleFilterByRoll = () => {
     const saved = JSON.parse(localStorage.getItem('sit_user_registrations') || '[]');
     if (!userRoll.trim()) {
-      fetch('http://localhost:5000/api/events/registrations')
+      fetch(`${API_BASE}/api/events/registrations`)
         .then(res => res.json())
         .then(serverData => {
           if (Array.isArray(serverData)) {
@@ -109,7 +110,7 @@ const Services = ({ user: propUser, token }) => {
     setRegistrations(localFiltered);
 
     // Also query backend endpoint
-    fetch(`http://localhost:5000/api/events/registrations/${userRoll.trim()}`)
+    fetch(`${API_BASE}/api/events/registrations/${userRoll.trim()}`)
       .then(res => res.json())
       .then(serverData => {
         if (Array.isArray(serverData) && serverData.length > 0) {
@@ -126,7 +127,7 @@ const Services = ({ user: propUser, token }) => {
   const handleCancelRegistration = (id) => {
     if (window.confirm('Are you sure you want to cancel this event pass? This will delete it from MongoDB and persistent records.')) {
       // Call backend DELETE to remove from MongoDB and persistent storage
-      fetch(`http://localhost:5000/api/events/registrations/${id}`, {
+      fetch(`${API_BASE}/api/events/registrations/${id}`, {
         method: 'DELETE'
       }).catch(err => console.error('Cancel pass fetch error:', err));
 
@@ -140,7 +141,7 @@ const Services = ({ user: propUser, token }) => {
   const handleReconnectMongo = () => {
     setReconnectLoading(true);
     setReconnectResult('');
-    fetch('http://localhost:5000/api/mongo/reconnect', { method: 'POST' })
+    fetch(`${API_BASE}/api/mongo/reconnect`, { method: 'POST' })
       .then(res => res.json())
       .then(data => {
         setReconnectResult(data.msg);
@@ -168,7 +169,7 @@ const Services = ({ user: propUser, token }) => {
 
     // Persist to MongoDB via backend
     try {
-      const res = await fetch('http://localhost:5000/api/events', {
+      const res = await fetch(`${API_BASE}/api/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(created)
@@ -297,7 +298,7 @@ const Services = ({ user: propUser, token }) => {
                     className="btn-nexus-outline" 
                     onClick={() => {
                       setUserRoll('');
-                      fetch('http://localhost:5000/api/events/registrations')
+                      fetch(`${API_BASE}/api/events/registrations`)
                         .then(res => res.json())
                         .then(serverData => {
                           if (Array.isArray(serverData)) setRegistrations(serverData);

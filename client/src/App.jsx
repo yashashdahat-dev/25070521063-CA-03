@@ -6,6 +6,7 @@ import Services from './services';
 import Contact from './contact';
 import Nav from './nav';
 import Auth from './auth';
+import { API_BASE } from './apiConfig';
 
 const App = () => {
   const [user, setUser] = useState(() => {
@@ -23,14 +24,14 @@ const App = () => {
 
   const [validating, setValidating] = useState(Boolean(token));
 
-  // Validate token on load via GET http://localhost:5000/api/auth/me
+  // Validate token on load via GET /api/auth/me
   useEffect(() => {
     if (!token) {
       setValidating(false);
       return;
     }
 
-    fetch('http://localhost:5000/api/auth/me', {
+    fetch(`${API_BASE}/api/auth/me`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }

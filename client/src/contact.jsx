@@ -3,6 +3,7 @@ import Footer from './homeComp/footer';
 import './App.css';
 
 import { useAuth } from './AuthContext';
+import { API_BASE } from './apiConfig';
 
 const Contact = ({ user: propUser, token }) => {
   const authContext = useAuth ? useAuth() : null;
@@ -40,7 +41,7 @@ const Contact = ({ user: propUser, token }) => {
     e.preventDefault();
     setContactError('');
     try {
-      const res = await fetch('http://localhost:5000/api/contact', {
+      const res = await fetch(`${API_BASE}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(contactData)

@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import Header from './homeComp/header';
 import MainContent from './homeComp/mainContentCont';
 import Footer from './homeComp/footer';
+import { API_BASE } from './apiConfig';
 import './App.css';
 
 // Initial Event Data
@@ -127,7 +128,7 @@ const Home = ({ user: propUser, token }) => {
 
   // Fetch hosted events from MongoDB on mount and merge with static list
   useEffect(() => {
-    fetch('http://localhost:5000/api/events')
+    fetch(`${API_BASE}/api/events`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -207,7 +208,7 @@ const Home = ({ user: propUser, token }) => {
 
     // 1. Send registration to backend — checks duplicate roll+event and updates student status in sitSecB
     try {
-      const regRes = await fetch('http://localhost:5000/api/events/register', {
+      const regRes = await fetch(`${API_BASE}/api/events/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

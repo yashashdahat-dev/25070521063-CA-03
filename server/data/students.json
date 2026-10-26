@@ -1,5 +1,17 @@
 [
   {
+    "_id": "sid_1793030255798",
+    "name": "Satvik Neb",
+    "email": "satvik@sit.edu",
+    "rollNumber": "25070521023",
+    "branch": "Computer Science & Engineering",
+    "age": 20,
+    "status": "Registered: RoboClash: Autonomous Bot Derby (Team: Starwar)",
+    "password": "$2b$10$.ParfYNRv/PdEhMo1LIprejTyZdgvkx/2IvNSC7SzRXJ5tKBoB9Du",
+    "createdAt": "2026-10-26T15:57:35.798Z",
+    "updatedAt": "2026-10-26T15:58:07.349Z"
+  },
+  {
     "_id": "sid_1793028844208",
     "name": "sagar",
     "email": "yash@gmail.com",

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import Footer from './homeComp/footer';
+import { API_BASE } from './apiConfig';
 import './App.css';
 
 const Auth = ({ initialTab = 'login', onAuthSuccess }) => {
@@ -63,7 +64,7 @@ const Auth = ({ initialTab = 'login', onAuthSuccess }) => {
 
     setSubmitting(true);
     try {
-      const res = await fetch('http://localhost:5000/login', {
+      const res = await fetch(`${API_BASE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginForm.emailOrRoll.trim(), password: loginForm.password })
@@ -109,7 +110,7 @@ const Auth = ({ initialTab = 'login', onAuthSuccess }) => {
 
     setSubmitting(true);
     try {
-      const res = await fetch('http://localhost:5000/create', {
+      const res = await fetch(`${API_BASE}/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

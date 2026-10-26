@@ -1,5 +1,20 @@
 [
   {
+    "id": "TICKET-699067",
+    "eventId": "evt-3",
+    "eventTitle": "RoboClash: Autonomous Bot Derby",
+    "eventDate": "Nov 08, 2026",
+    "venue": "Indoor Sports Complex Arena",
+    "teamName": "Starwar",
+    "leaderName": "Satvik Neb",
+    "rollNumber": "25070521023",
+    "email": "satvik@sit.edu",
+    "branch": "Computer Science & Engineering",
+    "teamSize": "2",
+    "registeredAt": "Oct 26, 2026",
+    "status": "Confirmed"
+  },
+  {
     "id": "TICKET-181685",
     "eventId": "evt-1",
     "eventTitle": "HackSIT 2026: 36-Hour National Hackathon",
