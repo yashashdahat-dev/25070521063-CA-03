@@ -1,16 +1,33 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Footer from './homeComp/footer';
 import './App.css';
 
-const Contact = () => {
+import { useAuth } from './AuthContext';
+
+const Contact = ({ user: propUser, token }) => {
+  const authContext = useAuth ? useAuth() : null;
+  const user = propUser || authContext?.user;
+
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [contactError, setContactError] = useState('');
   const [contactData, setContactData] = useState({
-    name: '',
-    roll: '',
-    email: '',
+    name: user?.name || '',
+    roll: user?.rollNumber || '',
+    email: user?.email || '',
     category: 'Registration Issue',
     message: ''
   });
+
+  useEffect(() => {
+    if (user) {
+      setContactData(prev => ({
+        ...prev,
+        name: user.name || prev.name,
+        roll: user.rollNumber || prev.roll,
+        email: user.email || prev.email
+      }));
+    }
+  }, [user]);
 
   const faqs = [
     { q: 'Can students from different branches form a hackathon team?', a: 'Yes! Cross-branch collaboration is highly encouraged in all SIT flagship events.' },
@@ -19,8 +36,24 @@ const Contact = () => {
     { q: 'Will hardware components be provided for robotics challenges?', a: 'Standard development boards and sensor kits will be issued from the Robotics Hardware Lab to shortlisted teams.' }
   ];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setContactError('');
+    try {
+      const res = await fetch('http://localhost:5000/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactData)
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setContactError(body.error || 'Failed to send message. Please try again.');
+        return;
+      }
+    } catch {
+      // Backend offline — still show success so form UX is not broken
+      console.warn('Backend unreachable — contact form submitted locally.');
+    }
     setFormSubmitted(true);
   };
 
@@ -53,7 +86,7 @@ const Contact = () => {
                   <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
                     Thank you! The student event coordinator for <strong>{contactData.category}</strong> will get back to your email within 24 hours.
                   </p>
-                  <button className="btn-nexus-outline" onClick={() => setFormSubmitted(false)}>
+                  <button className="btn-nexus-outline" onClick={() => { setFormSubmitted(false); setContactError(''); }}>
                     Send Another Message
                   </button>
                 </div>
@@ -119,6 +152,24 @@ const Contact = () => {
                     value={contactData.message}
                     onChange={e => setContactData({ ...contactData, message: e.target.value })}
                   ></textarea>
+
+                  {contactError && (
+                    <div style={{
+                      background: 'rgba(239,68,68,0.12)',
+                      border: '1px solid rgba(239,68,68,0.4)',
+                      borderRadius: '10px',
+                      padding: '9px 14px',
+                      marginBottom: '1rem',
+                      fontSize: '0.84rem',
+                      color: '#fca5a5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <i className="fa-solid fa-circle-exclamation"></i>
+                      <span>{contactError}</span>
+                    </div>
+                  )}
 
                   <button type="submit" className="btn-nexus-primary" style={{ width: '100%', justifyContent: 'center' }}>
                     <i className="fa-solid fa-paper-plane"></i> Submit Inquiry

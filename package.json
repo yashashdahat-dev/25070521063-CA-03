@@ -1,0 +1,16 @@
+{
+  "name": "sit-events-platform",
+  "version": "1.0.0",
+  "description": "SIT Events Platform - Full-stack CA-03 Project",
+  "main": "start.js",
+  "scripts": {
+    "start": "node start.js",
+    "dev": "node start.js",
+    "server": "npm start --prefix server",
+    "client": "npm run dev --prefix client",
+    "build": "npm run build --prefix client"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

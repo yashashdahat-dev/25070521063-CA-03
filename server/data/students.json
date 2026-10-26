@@ -1,5 +1,64 @@
 [
   {
+    "_id": "sid_1793028844208",
+    "name": "sagar",
+    "email": "yash@gmail.com",
+    "rollNumber": "2507052100027",
+    "branch": "Computer Science & Engineering",
+    "age": 20,
+    "status": "Active Student",
+    "password": "$2b$10$Y1b/iwzMIgrMmCthwsBatudFujf8gITsmDBAMXVDbVW6uTbyUys1a",
+    "createdAt": "2026-10-26T15:34:04.208Z",
+    "updatedAt": "2026-10-26T15:34:04.208Z"
+  },
+  {
+    "_id": "sid_1793027937596",
+    "name": "Priya Sharma",
+    "email": "student1793027937527@sit.edu",
+    "rollNumber": "25070521811",
+    "branch": "Artificial Intelligence & Data Science",
+    "age": 21,
+    "status": "Registered: National AI Challenge (Team: CyberTitans)",
+    "password": "$2b$10$v4Qj10Xf0Deuy/fU.n6ypepTX7eI5QnZ3CjX13XhRP9dQ67SD/Jke",
+    "createdAt": "2026-10-26T15:18:57.596Z",
+    "updatedAt": "2026-10-26T15:18:57.767Z"
+  },
+  {
+    "_id": "sid_1793027054493",
+    "age": 20,
+    "branch": "Computer Science",
+    "createdAt": "2026-10-26T15:04:14.493Z",
+    "email": "yashashdahat@gmail.com",
+    "name": "dcn ns dmn dc",
+    "password": "$2b$10$xMw4rtw3FeUMXJonjZjWZOso8ri4.m3jJ59c1MBItsp36emgTPFPu",
+    "rollNumber": "",
+    "status": "Registered: AI Innovation Challenge 2026 (Team: nkj dvs)",
+    "updatedAt": "2026-10-26T15:04:14.493Z"
+  },
+  {
+    "_id": "sid_1793026477023",
+    "age": 22,
+    "branch": "Computer Science",
+    "createdAt": "2026-10-26T14:54:37.023Z",
+    "email": "yashash@example.com",
+    "name": "Yashash Dahat Updated",
+    "password": "",
+    "rollNumber": "25070521063",
+    "status": "Registered: HackSIT 2026: 36-Hour National Hackathon (Team: vdssdvdv)",
+    "updatedAt": "2026-10-26T15:47:57.626Z"
+  },
+  {
+    "_id": "sid_1793005543663",
+    "name": "Yashash Dahat",
+    "age": 20,
+    "rollNumber": "25070521063",
+    "branch": "Computer Science",
+    "status": "Active Student",
+    "email": "yashash@sit.edu",
+    "password": "$2b$10$PQ6geQB6k1GoSjZJUEPMXewJ09rLugoVaq1maK9hZD2DK6dKajB7m",
+    "createdAt": "2026-10-26T09:05:43.663Z"
+  },
+  {
     "_id": "sid_1792830645653",
     "name": "ef mk w",
     "age": 20,

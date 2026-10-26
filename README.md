@@ -52,21 +52,31 @@
 
 ## ⚙️ How to Run Locally
 
-### 1. Start the Backend Server
+### Option 1: 1-Command Full Stack Startup (Recommended)
+From the project root directory:
+```bash
+npm start
+```
+*(Or `npm run dev`, or double-click `start.bat` on Windows)*.  
+This launches both the Express backend (`http://localhost:5000`) and Vite frontend (`http://localhost:5173`) concurrently.
+
+---
+
+### Option 2: Run in Two Terminals
+
+#### 1. Backend Server
 ```bash
 cd server
-npm install
-node server.js
+npm start
 ```
 *Backend runs on:* `http://localhost:5000`
 
-### 2. Start the Frontend Client
+#### 2. Frontend Client
 ```bash
 cd client
-npm install
 npm run dev
 ```
-*Frontend runs on:* `http://localhost:5174` (or `http://localhost:5173`)
+*Frontend runs on:* `http://localhost:5173`
 
 ---
 
@@ -74,25 +84,43 @@ npm run dev
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
+| `POST` | `/signup` or `/create` | Register a new student account (Bcrypt + JWT) |
+| `POST` | `/login` or `/api/auth/login` | Authenticate by Email OR Roll Number + Password |
+| `GET` | `/api/auth/me` | Fetch authenticated student profile from JWT |
 | `GET` | `/getall` | Retrieve all student records |
 | `GET` | `/get/:id` | Retrieve student by ID |
-| `POST` | `/create` | Register/Add a new student |
-| `POST` | `/login` | Authenticate student (JWT + Bcrypt) |
 | `PUT` | `/update/:id` | Update student status |
 | `DELETE` | `/delete/:id` | Delete student record |
-| `POST` | `/api/events/register` | Register a team for an event |
+| `POST` | `/api/events/register` | Register a team pass (prevents duplicate rolls) |
 | `GET` | `/api/events/registrations` | Get all registered event passes |
 | `GET` | `/api/events/registrations/:rollNumber` | Filter passes by student roll number |
+| `GET` | `/api/events` | Fetch all campus and hosted events |
+| `POST` | `/api/events` | Host and persist a new campus event |
+| `POST` | `/api/contact` | Submit student support ticket |
+| `GET` | `/api/contact` | Retrieve support tickets |
 | `GET` | `/api/status` | Diagnostic server health & data summary |
 
 ---
 
+## 🔐 Authentication Features
+- **Frontend Auth Gate:** Users must Sign In or Register before accessing the platform.
+- **Dynamic Navbar:** Displays student name avatar, roll number badge, live MongoDB status badge, and one-click Sign Out button.
+- **Auto-Fill Integration:** Event registration modal pre-populates team leader details automatically.
+- **Pass Management:** "My Passes" button in `services.jsx` filters passes belonging to the authenticated student.
+
+---
+
 ## 💾 Where is Information Stored?
-1. **Local Persistent JSON Files:**
-   * `server/data/registrations.json` — Stores all team passes and registrations.
-   * `server/data/students.json` — Stores student logins and profiles.
-2. **Web App Inspector:**
-   * Go to `/services` -> Click **"Where is Data Stored? (Inspector)"** tab for real-time diagnostics and live raw JSON viewing.
-3. **MongoDB:**
+1. **MongoDB Compass (Primary):**
+   * Connection URI: `mongodb://127.0.0.1:27017`
    * Database: `sitSecB`
-   * Collections: `event_registrations`, `student`
+   * Collections:
+     * `student` — Student credentials & profile details.
+     * `event_registrations` — Generated passes and ticket entries.
+     * `events` — Custom hosted events.
+     * `contacts` — Submitted support inquiries.
+2. **Local Persistent JSON Files (Fallback):**
+   * `server/data/students.json`
+   * `server/data/registrations.json`
+   * `server/data/events.json`
+   * `server/data/contacts.json`

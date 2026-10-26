@@ -1,4 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 import Header from './homeComp/header';
 import MainContent from './homeComp/mainContentCont';
 import Footer from './homeComp/footer';
@@ -110,11 +112,30 @@ export const initialEvents = [
   }
 ];
 
-const Home = () => {
+const Home = ({ user: propUser, token }) => {
+  const authContext = useAuth ? useAuth() : null;
+  const user = propUser || authContext?.user;
+  const currentUser = user;
+  const isAuthenticated = Boolean(user);
+
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeModalEvent, setActiveModalEvent] = useState(null);
   const [registeredSuccess, setRegisteredSuccess] = useState(null);
+  const [regError, setRegError] = useState('');
+  const [hostedEvents, setHostedEvents] = useState([]);
+
+  // Fetch hosted events from MongoDB on mount and merge with static list
+  useEffect(() => {
+    fetch('http://localhost:5000/api/events')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setHostedEvents(data);
+        }
+      })
+      .catch(() => {}); // Backend offline — static list still works
+  }, []);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -122,14 +143,21 @@ const Home = () => {
     leaderName: '',
     rollNumber: '',
     email: '',
+    branch: 'Computer Science',
     teamSize: '2',
     projectIdea: ''
   });
 
   const categories = ['All', 'Hackathons', 'Coding Contests', 'Robotics', 'Workshops'];
 
+  // Merge static events with hosted events from MongoDB (hosted events appear first if unique ids)
+  const allEvents = [
+    ...hostedEvents.filter(he => !initialEvents.some(ie => ie.id === he.id)),
+    ...initialEvents
+  ];
+
   // Filter Logic
-  const filteredEvents = initialEvents.filter(event => {
+  const filteredEvents = allEvents.filter(event => {
     const matchesCat = selectedCategory === 'All' || event.category === selectedCategory;
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           event.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -141,13 +169,15 @@ const Home = () => {
     setActiveModalEvent(event);
     setFormData({
       teamName: '',
-      leaderName: '',
-      rollNumber: '',
-      email: '',
+      leaderName: currentUser?.name || '',
+      rollNumber: currentUser?.rollNumber || '',
+      email: currentUser?.email || '',
+      branch: currentUser?.branch || 'Computer Science',
       teamSize: '2',
       projectIdea: ''
     });
     setRegisteredSuccess(null);
+    setRegError('');
   };
 
   const handleCloseModal = () => {
@@ -155,8 +185,10 @@ const Home = () => {
     setRegisteredSuccess(null);
   };
 
-  const handleSubmitRegistration = (e) => {
+  const handleSubmitRegistration = async (e) => {
     e.preventDefault();
+    setRegError('');
+
     const newRegistration = {
       id: 'TICKET-' + Math.floor(100000 + Math.random() * 900000),
       eventId: activeModalEvent.id,
@@ -167,35 +199,43 @@ const Home = () => {
       leaderName: formData.leaderName,
       rollNumber: formData.rollNumber,
       email: formData.email,
+      branch: formData.branch || currentUser?.branch || 'Computer Science',
       teamSize: formData.teamSize,
       registeredAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       status: 'Confirmed'
     };
 
-    // Save to local storage for persistence across tabs
+    // 1. Send registration to backend — checks duplicate roll+event and updates student status in sitSecB
+    try {
+      const regRes = await fetch('http://localhost:5000/api/events/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(newRegistration)
+      });
+
+      if (regRes.status === 409) {
+        const errBody = await regRes.json();
+        setRegError(errBody.error || 'This Roll Number is already registered for this event.');
+        return; // Stop — do not show success pass
+      }
+
+      if (!regRes.ok) {
+        const errBody = await regRes.json().catch(() => ({}));
+        setRegError(errBody.error || 'Registration failed. Please try again.');
+        return;
+      }
+    } catch {
+      // Backend offline — still allow local registration with a warning
+      console.warn('Backend unreachable — saving registration locally only.');
+    }
+
+    // 2. Save to local storage for persistence across tabs
     const existing = JSON.parse(localStorage.getItem('sit_user_registrations') || '[]');
     existing.unshift(newRegistration);
     localStorage.setItem('sit_user_registrations', JSON.stringify(existing));
-
-    // 1. Send full registration to /api/events/register (persists to registrations.json & MongoDB)
-    fetch('http://localhost:5000/api/events/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newRegistration)
-    }).catch(err => console.log('Event register fetch err:', err));
-
-    // 2. Also send student info to /create (persists to students.json & MongoDB student collection)
-    fetch('http://localhost:5000/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: formData.leaderName,
-        age: 20,
-        status: 'Registered: ' + activeModalEvent.title + ' (Team: ' + formData.teamName + ')',
-        password: 'password123',
-        email: formData.email || `${formData.rollNumber}@sit.edu`
-      })
-    }).catch(err => console.log('Create student fetch err:', err));
 
     setRegisteredSuccess(newRegistration);
   };
@@ -385,6 +425,70 @@ const Home = () => {
                     <i className="fa-solid fa-xmark"></i>
                   </button>
                 </div>
+
+                {isAuthenticated ? (
+                  <div
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.12)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      borderRadius: '10px',
+                      padding: '9px 14px',
+                      marginBottom: '1.2rem',
+                      fontSize: '0.84rem',
+                      color: '#6ee7b7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <i className="fa-solid fa-circle-check text-success"></i>
+                    <span>
+                      Logged in as <strong>{user?.name}</strong> ({user?.rollNumber || user?.email}). Leader details pre-filled!
+                    </span>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      background: 'rgba(99, 102, 241, 0.1)',
+                      border: '1px solid rgba(99, 102, 241, 0.25)',
+                      borderRadius: '10px',
+                      padding: '9px 14px',
+                      marginBottom: '1.2rem',
+                      fontSize: '0.84rem',
+                      color: '#a5b4fc',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>
+                      <i className="fa-solid fa-circle-info me-1"></i> Have an SIT Nexus profile?
+                    </span>
+                    <Link to="/login" style={{ color: '#fff', textDecoration: 'underline', fontWeight: 600 }}>
+                      Sign In to auto-fill
+                    </Link>
+                  </div>
+                )}
+
+                {regError && (
+                  <div style={{
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    borderRadius: '10px',
+                    padding: '9px 14px',
+                    marginBottom: '1rem',
+                    fontSize: '0.84rem',
+                    color: '#fca5a5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <i className="fa-solid fa-circle-exclamation"></i>
+                    <span>{regError}</span>
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmitRegistration}>
                   <label className="form-label-custom">Team Name *</label>

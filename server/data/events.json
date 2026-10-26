@@ -1,0 +1,23 @@
+[
+  {
+    "id": "evt-hosted-1793026476989",
+    "title": "AI Innovation Challenge 2026",
+    "category": "Hackathons",
+    "date": "2026-11-20",
+    "time": "10:00 AM",
+    "venue": "SIT Auditorium",
+    "prize": "₹50,000",
+    "teamSize": "2 - 4 Members",
+    "desc": "Annual flagship AI hackathon",
+    "organizer": "Computer Science Dept",
+    "tags": [
+      "Innovation",
+      "Campus"
+    ],
+    "badge": "Open",
+    "badgeClass": "badge-open",
+    "registeredTeams": 0,
+    "maxTeams": 50,
+    "createdAt": "2026-10-26T14:54:36.989Z"
+  }
+]
